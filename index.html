@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>User Authenticator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  </head>
+  <body style="background-color:#7FFFD4;">
+    <center><div id="root"></div></center>
+	<script type="text/babel">
+
+
+
+
+(function() {
+const USER_KEY = 'userId';
+const WS_URL = 'https://localhost:1236';
+
+function getWsUrl() {
+    const params = (new URL(document.location)).searchParams;
+    return params.get('ws-url') || WS_URL;
+  }
+function login(id, pw) {
+  return axios.put(`${this.baseUrl}/users/${id}/auth`,
+		   { pw: pw }, { maxRedirects: 0 })
+    .then((response) => response.data)
+    .catch(function(err) {
+      const status = err.response.status;
+      if (status === 401 || status === 404) {
+	return err.response.data;
+      }
+      else {
+	throw err;
+      }
+    });
+}
+//alert(getWsUrl());
+class App extends React.Component {
+  
+	constructor(props) {
+    super(props);
+    this.ws = props.ws;
+	
+    this.state = { active: <LoginPage app={this}/> };
+    this.clickHandler = this.clickHandler.bind(this);
+  }
+  //alert(this.ws.getWsUrl());
+  setActive(component) {
+    this.setState({active: component});
+  }
+
+  clickHandler(event) {
+    const id = event.target.id;
+    const component =
+      (id === 'RegistrationPage') ? <RegistrationPage app={this}/> : <LoginPage app={this}/>;
+    this.setActive(component);
+    event.preventDefault();
+  }
+  
+  render() {
+    const activeId = this.state.active.type.name;
+    let links = [];
+    for (const id of ['RegistrationPage']) {
+      if (activeId !== id) {
+	const searchLink =
+          <div key={id}>
+            <a href="#" onClick={this.clickHandler} id={id}>{id}</a>
+	    <br/>
+	  </div>;
+	
+      }
+    }
+    return (
+      <div>
+	{this.state.active}<br/>
+	{links}
+      </div>
+    );
+  }
+}
+
+
+
+function LoginService() {
+
+  function getWsUrl() {
+    const params = (new URL(document.location)).searchParams;
+    return params.get('ws-url') || WS_URL;
+  }
+  
+  this.baseUrl = getWsUrl();
+  
+  //All action functions return promises.
+
+  this.register = function(id, pw, info) {
+  return axios.put(`${this.baseUrl}/users/${id}?pw=${pw}`,
+		   info, { maxRedirects: 0 })
+    .then((response) => response.data)
+    .catch(function(err) {
+      const status = err.response.status;
+      if (status === 303) {
+	return err.response.data;
+      }
+      else {
+	throw err;
+      }
+    });
+}
+
+ this.login = function(id, pw) {
+  return axios.put(`${this.baseUrl}/users/${id}/auth`,
+		   { pw: pw }, { maxRedirects: 0 })
+    .then((response) => response.data)
+    .catch(function(err) {
+      const status = err.response.status;
+      if (status === 401 || status === 404) {
+	return err.response.data;
+      }
+      else {
+	throw err;
+      }
+    });
+}
+
+ this.info = function(id, authToken) {
+  return axios.request({ url: `${this.baseUrl}/users/${id}`,
+			 method: 'get',
+			 headers: {
+			   Authorization: `Bearer ${authToken}`
+			 }
+		       })
+    .then((response) => response.data)
+    .catch(function(err) {
+      const status = err.response.status;
+      if (status === 401 || status === 404) {
+	return err.response.data;
+      }
+      else {
+	throw err;
+      }
+    });
+
+}
+
+}
+
+class RegistrationPage extends React.Component {
+	constructor(props) {
+    super(props);
+    this.app = props.app;
+	this.state = {
+      email: '',
+	  password: '',
+	  passwordconfirmation:'',
+	  name:'',
+	  lastname:'',
+      qError: '',
+      genError: '',
+    };
+	this.handleChangeEmail = this.handleChangeEmail.bind(this);
+	this.handleChangeFN = this.handleChangeFN.bind(this);
+	this.handleChangeLN = this.handleChangeLN.bind(this);
+	this.handleChangePassRe = this.handleChangePassRe.bind(this);
+	this.handleChangePass = this.handleChangePass.bind(this);
+	this.validatePass = this.validatePass.bind(this);
+    this.registerHandler = this.registerHandler.bind(this);
+	 this.handlelogin = this.handlelogin.bind(this);
+  }
+ 
+	handlelogin(event) {
+	  this.app.setActive(<LoginPage app={this.app} />);
+	}
+
+	
+	handleChangeEmail(event) {
+	  this.setState({email: event.target.value});
+	}
+	validatePass(event) {
+	  if(this.state.password===this.state.passwordconfirmation){
+		  alert("Passwords Equal");
+		}
+		else{
+			alert("Passwords Not equal");
+		}
+	}
+  
+	handleChangePass(event) {
+	  this.setState({password: event.target.value});
+	}
+	
+	handleChangePassRe(event) {
+	  this.setState({passwordconfirmation: event.target.value});
+	}
+	
+	handleChangeFN(event) {
+	  this.setState({name: event.target.value});
+	}
+	
+	handleChangeLN(event) {
+	  this.setState({lastname: event.target.value});
+	}
+	
+  registerHandler(event) {
+    const self = this;
+	this.baseUrl =  getWsUrl();
+    const email = this.state.email;
+	const password = this.state.password;
+	const passwordconfirmation = this.state.passwordconfirmation;
+	const name = this.state.name;
+	const lastname = this.state.lastname;
+	const info = {firstname:name,lastname:lastname};
+	if(email.trim().length===0||password.trim().length===0||passwordconfirmation.trim().length===0||
+	name.trim().length===0||lastname.trim().length===0){
+		alert("Inputs need to have characters other than whitespace");
+	}
+	else{
+		if(password!==passwordconfirmation){
+			self.setState({password: ''});
+			self.setState({passwordconfirmation: ''});
+			alert("Please make sure both password fields match");
+		}
+		else {
+			axios.put(`${this.baseUrl}/users/${email}?pw=${password}`,
+				   info, { maxRedirects: 0 })
+			.then(function(response){
+				localStorage.setItem(USER_KEY, response.data.authToken);
+				self.app.setActive(<MyAccount app={self.app} data={response.data} id={email} />);})
+			.catch(function(err) {
+			  const status = err.response.status;
+			  if (status === 401) {
+				  alert("User already exists with the given Email Id");
+				  self.setState({password: ''});
+				  self.setState({passwordconfirmation: ''});
+			return err.response.data;
+			  }
+			  else {
+			throw err;
+			  }
+			});
+			}
+	}
+   event.preventDefault();
+	
+	
+	}
+  
+
+  
+  
+  render() {
+    return (
+      <div><h1>Registration Page</h1>
+	  <form onSubmit={this.registerHandler}>
+		  <label for="name">First Name</label>
+          <input type="text" required="" onChange={this.handleChangeFN} value={this.state.name} name="name" placeholder="First Name" /><br/>
+		  <label for="lastname">Last Name</label>
+		  <input type="text" required="" onChange={this.handleChangeLN} value={this.state.lastname} name="lastname" placeholder="Last Name" /><br/>
+		  <label for="email">Email</label>
+		  <input type="text" required="" onChange={this.handleChangeEmail} value={this.state.email} pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$" name="email" placeholder="Email"/> <br/>
+          <label for="password">Password</label>
+		  <input type="password" onChange={this.handleChangePass} value={this.state.password}  pattern="(?=.*\d)(?=.*[a-z]).{8,}" required="" name="password" placeholder="Password"/><br/>
+          <label for="passwordconfirmation">Re-type Password</label>
+		  <input type="password" onblur={this.validatePass} onChange={this.handleChangePassRe} value={this.state.passwordconfirmation} required="" name="passwordconfirmation" pattern="(?=.*\d)(?=.*[a-z]).{8,}"  placeholder="Retype Password"/><br/>
+		<button type="submit">Register</button>
+	
+	
+	</form><br/>
+	<a href="#" onClick={this.handlelogin}>
+      Login
+    </a><br/>
+
+	  </div>
+    );
+  }
+  
+}
+
+
+class MyAccount extends React.Component {
+  constructor(props) {
+    super(props);
+    this.app = props.app;
+    this.data = props.data;
+	this.id= props.id;
+	this.handlelogout = this.handlelogout.bind(this);
+	 this.state = {firstname: '',lastname:''};
+  }
+	handlelogout(event) {
+	  localStorage.removeItem(USER_KEY);
+	  self.app.setActive(<LoginPage app={self.app} />);
+	}
+	componentDidMount() {
+		self = this;
+		self.baseUrl =  getWsUrl();
+		const cookie = localStorage.getItem(USER_KEY);
+		if(cookie===null){
+			self.app.setActive(<LoginPage app={self.app} />);
+		}
+		else{
+		
+		
+		axios.request({ url: `${self.baseUrl}/users/${self.id}`,
+			 method: 'get',
+			 headers: {
+			   Authorization: `Bearer ${cookie}`
+			 }
+		       })
+    .then(function (response) {
+		self.setState({firstname:response.data.firstname,lastname:response.data.lastname});
+		
+		
+	})
+    .catch(function(err) {
+      const status = err.response.status;
+      if (status === 401 || status === 404) {
+		  if(status===401){
+			  alert("Unauthorized User");
+			  }
+		else if(status ===404){
+			alert("User not found with the specified Email Id");
+		}
+	return err.response.data;
+      }
+      else {
+	throw err;
+      }
+    });
+	}
+}
+	
+  
+  
+        
+  
+  render() {
+	  
+    return (
+	
+      <div><h1>MyAccount Page</h1>
+		<p>First Name : {this.state.firstname}</p> <br />
+		<p>Last Name : {this.state.lastname}</p> <br />
+		<a href="#" onClick={this.handlelogout}>
+      Logout
+    </a>
+      </div>
+    );
+  }
+  
+}
+
+class LoginPage extends React.Component {
+ 
+	
+   constructor(props) {
+    super(props);
+    this.app = props.app;
+	this.state = {
+      email: '',
+	  password: '',
+      qError: '',
+      genError: '',
+    };
+	this.handleregister = this.handleregister.bind(this);
+	this.handleChange = this.handleChange.bind(this);
+	this.handleChangePass = this.handleChangePass.bind(this);
+    this.loginHandler = this.loginHandler.bind(this);
+  }
+	handleregister(event) {
+	  this.app.setActive(<RegistrationPage app={this.app} />);
+	}
+    
+	handleChange(event) {
+	  this.setState({email: event.target.value});
+	}
+  
+	handleChangePass(event) {
+	  this.setState({password: event.target.value});
+	}
+	
+  loginHandler(event) {
+    const self = this;
+	this.baseUrl =  getWsUrl();
+    const email = this.state.email;
+	const password = this.state.password;
+	axios.put(`${this.baseUrl}/users/${email}/auth`,
+		   { pw: password }, { maxRedirects: 0 })
+    .then(function(response) { 
+		localStorage.setItem(USER_KEY, response.data.authToken);
+		self.app.setActive(<MyAccount app={self.app} data={response.data} id={email} />);
+		})
+	.catch(function(err) {
+      const status = err.response.status;
+      if (status === 401 || status === 404) {
+		  if(status===401){
+			  alert("Wrong Password");
+			  self.setState({password: ''});
+			}
+			else{
+				alert("User Doesnot Exists");
+				self.setState({password: ''});
+				}
+		  
+		  
+	return err.response.data;
+      }
+      else {
+	throw err;
+      }
+    });
+	
+   event.preventDefault();
+	
+	
+	}
+
+  
+  
+  render() {
+	const {email,password, qError, genError} = this.state;
+    const {loginHandler} = this;
+    return (
+      <div><h1>Login Page</h1>
+	  <form onSubmit={this.loginHandler}>
+          <label for="email">Email</label>
+		  <input type="text" required="" onChange={this.handleChange} value={this.state.email} pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$" name="email" placeholder="Email"/> <br/>
+		  <label for="password">Password</label>
+          <input type="password" onChange={this.handleChangePass} value = {this.state.password} pattern="(?=.*\d)(?=.*[a-z]).{8,}" required="" name="password" placeholder="Password"/><br/>
+		  <button type="submit">Login</button>
+			
+	</form><br/>
+	<a href="#" onClick={this.handleregister}>
+      Register
+    </a><br/>
+
+	  </div>
+    );
+  }
+  
+}
+
+/*************************** Form Definitions **************************/
+
+
+const ws = new LoginService();
+
+ReactDOM.render(
+  <App ws={ws}/>,
+  document.getElementById('root')
+);
+
+
+
+})();  //end IIFE
+  </script>
+  
+  </body>
+</html>
